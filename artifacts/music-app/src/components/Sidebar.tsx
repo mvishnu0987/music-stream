@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Search, Library, Plus } from "lucide-react";
+import { Home, Search, Library, Plus, Heart } from "lucide-react";
 import { useGetPlaylists, useCreatePlaylist } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +27,9 @@ export function Sidebar() {
           </Link>
           <Link href="/playlists" className={`flex items-center gap-4 font-medium transition-colors hover:text-white ${location === '/playlists' ? 'text-white' : 'text-muted-foreground'}`}>
             <Library className="w-6 h-6" /> Your Library
+          </Link>
+          <Link href="/liked-songs" className={`flex items-center gap-4 font-medium transition-colors hover:text-white ${location === '/liked-songs' ? 'text-white' : 'text-muted-foreground'}`}>
+            <Heart className="w-6 h-6" /> Liked Songs
           </Link>
         </nav>
       </div>

@@ -215,3 +215,51 @@ export const RemoveTrackFromPlaylistResponse = zod.object({
 })
 
 
+/**
+ * @summary Get all favourite tracks
+ */
+export const GetFavoritesResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "artist": zod.string(),
+  "album": zod.string(),
+  "duration": zod.number().describe('Duration in milliseconds'),
+  "previewUrl": zod.string().nullable(),
+  "artworkUrl": zod.string(),
+  "genre": zod.string().nullish(),
+  "releaseYear": zod.number().nullish()
+})
+export const GetFavoritesResponse = zod.array(GetFavoritesResponseItem)
+
+
+/**
+ * @summary Add a track to favourites
+ */
+export const AddFavoriteBody = zod.object({
+  "trackId": zod.string(),
+  "title": zod.string(),
+  "artist": zod.string(),
+  "album": zod.string(),
+  "duration": zod.number(),
+  "previewUrl": zod.string().nullish(),
+  "artworkUrl": zod.string(),
+  "genre": zod.string().nullish(),
+  "releaseYear": zod.number().nullish()
+})
+
+
+/**
+ * @summary Remove a track from favourites
+ */
+export const RemoveFavoriteParams = zod.object({
+  "trackId": zod.coerce.string()
+})
+
+
+/**
+ * @summary Get IDs of all favourite tracks (lightweight)
+ */
+export const GetFavoriteIdsResponseItem = zod.string()
+export const GetFavoriteIdsResponse = zod.array(GetFavoriteIdsResponseItem)
+
+

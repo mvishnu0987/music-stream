@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import Search from "@/pages/Search";
 import Playlists from "@/pages/Playlists";
 import PlaylistDetail from "@/pages/PlaylistDetail";
+import LikedSongs from "@/pages/LikedSongs";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ function Router() {
         <Route path="/search" component={Search} />
         <Route path="/playlists" component={Playlists} />
         <Route path="/playlist/:id" component={PlaylistDetail} />
+        <Route path="/liked-songs" component={LikedSongs} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

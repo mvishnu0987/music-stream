@@ -13,6 +13,8 @@ tags:
     description: Music search and metadata
   - name: playlists
     description: Playlist management
+  - name: favorites
+    description: Favorite tracks
 paths:
   /healthz:
     get:
@@ -243,6 +245,68 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlaylistWithTracks"
+
+  /favorites:
+    get:
+      operationId: getFavorites
+      tags: [favorites]
+      summary: Get all favourite tracks
+      responses:
+        "200":
+          description: List of favourite tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Track"
+    post:
+      operationId: addFavorite
+      tags: [favorites]
+      summary: Add a track to favourites
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaylistTrackInput"
+      responses:
+        "201":
+          description: Added to favourites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+
+  /favorites/{trackId}:
+    delete:
+      operationId: removeFavorite
+      tags: [favorites]
+      summary: Remove a track from favourites
+      parameters:
+        - name: trackId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Removed
+
+  /favorites/ids:
+    get:
+      operationId: getFavoriteIds
+      tags: [favorites]
+      summary: Get IDs of all favourite tracks (lightweight)
+      responses:
+        "200":
+          description: Array of track IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
 
 components:
   schemas:

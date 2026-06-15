@@ -1,0 +1,1 @@
+- [ccMixter header overflow fix](ccmixter-header-fix.md) — 3-part fix: global --max-http-header-size flag + rejectUnauthorized:false agent + NO per-request maxHeaderSize override

@@ -877,3 +877,298 @@ export const useRemoveTrackFromPlaylist = <TError = ErrorType<unknown>,
       return useMutation(getRemoveTrackFromPlaylistMutationOptions(options));
     }
 
+export const getGetFavoritesUrl = () => {
+
+
+
+
+  return `/api/favorites`
+}
+
+/**
+ * @summary Get all favourite tracks
+ */
+export const getFavorites = async ( options?: RequestInit): Promise<Track[]> => {
+
+  return customFetch<Track[]>(getGetFavoritesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFavoritesQueryKey = () => {
+    return [
+    `/api/favorites`
+    ] as const;
+    }
+
+
+export const getGetFavoritesQueryOptions = <TData = Awaited<ReturnType<typeof getFavorites>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFavorites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFavoritesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFavorites>>> = ({ signal }) => getFavorites({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFavorites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFavoritesQueryResult = NonNullable<Awaited<ReturnType<typeof getFavorites>>>
+export type GetFavoritesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all favourite tracks
+ */
+
+export function useGetFavorites<TData = Awaited<ReturnType<typeof getFavorites>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFavorites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFavoritesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddFavoriteUrl = () => {
+
+
+
+
+  return `/api/favorites`
+}
+
+/**
+ * @summary Add a track to favourites
+ */
+export const addFavorite = async (playlistTrackInput: PlaylistTrackInput, options?: RequestInit): Promise<Track> => {
+
+  return customFetch<Track>(getAddFavoriteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      playlistTrackInput,)
+  }
+);}
+
+
+
+
+export const getAddFavoriteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,{data: BodyType<PlaylistTrackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,{data: BodyType<PlaylistTrackInput>}, TContext> => {
+
+const mutationKey = ['addFavorite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addFavorite>>, {data: BodyType<PlaylistTrackInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  addFavorite(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof addFavorite>>>
+    export type AddFavoriteMutationBody = BodyType<PlaylistTrackInput>
+    export type AddFavoriteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a track to favourites
+ */
+export const useAddFavorite = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,{data: BodyType<PlaylistTrackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addFavorite>>,
+        TError,
+        {data: BodyType<PlaylistTrackInput>},
+        TContext
+      > => {
+      return useMutation(getAddFavoriteMutationOptions(options));
+    }
+
+export const getRemoveFavoriteUrl = (trackId: string,) => {
+
+
+
+
+  return `/api/favorites/${trackId}`
+}
+
+/**
+ * @summary Remove a track from favourites
+ */
+export const removeFavorite = async (trackId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveFavoriteUrl(trackId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveFavoriteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,{trackId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,{trackId: string}, TContext> => {
+
+const mutationKey = ['removeFavorite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeFavorite>>, {trackId: string}> = (props) => {
+          const {trackId} = props ?? {};
+
+          return  removeFavorite(trackId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof removeFavorite>>>
+
+    export type RemoveFavoriteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove a track from favourites
+ */
+export const useRemoveFavorite = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,{trackId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeFavorite>>,
+        TError,
+        {trackId: string},
+        TContext
+      > => {
+      return useMutation(getRemoveFavoriteMutationOptions(options));
+    }
+
+export const getGetFavoriteIdsUrl = () => {
+
+
+
+
+  return `/api/favorites/ids`
+}
+
+/**
+ * @summary Get IDs of all favourite tracks (lightweight)
+ */
+export const getFavoriteIds = async ( options?: RequestInit): Promise<string[]> => {
+
+  return customFetch<string[]>(getGetFavoriteIdsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFavoriteIdsQueryKey = () => {
+    return [
+    `/api/favorites/ids`
+    ] as const;
+    }
+
+
+export const getGetFavoriteIdsQueryOptions = <TData = Awaited<ReturnType<typeof getFavoriteIds>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFavoriteIds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFavoriteIdsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFavoriteIds>>> = ({ signal }) => getFavoriteIds({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFavoriteIds>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFavoriteIdsQueryResult = NonNullable<Awaited<ReturnType<typeof getFavoriteIds>>>
+export type GetFavoriteIdsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get IDs of all favourite tracks (lightweight)
+ */
+
+export function useGetFavoriteIds<TData = Awaited<ReturnType<typeof getFavoriteIds>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFavoriteIds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFavoriteIdsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+

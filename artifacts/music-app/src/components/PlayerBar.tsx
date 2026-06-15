@@ -2,6 +2,8 @@ import React from "react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Volume2, Heart, Download } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { useAddFavorite, useRemoveFavorite, useGetFavoriteIds, getGetFavoriteIdsQueryKey, getGetFavoritesQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -16,9 +18,51 @@ export function PlayerBar() {
     resume, pause, next, prev, seek, setVolume, toggleShuffle, toggleRepeat 
   } = useMusicPlayer();
 
+  const queryClient = useQueryClient();
+  const { data: favoriteIds } = useGetFavoriteIds({ query: { queryKey: getGetFavoriteIdsQueryKey() } });
+  const addFavorite = useAddFavorite();
+  const removeFavorite = useRemoveFavorite();
+
   if (!currentTrack) return null;
 
-  const duration = 30; // Previews are generally 30 seconds
+  const duration = currentTrack.duration ? Math.floor(currentTrack.duration / 1000) : 0;
+  const isFav = favoriteIds?.includes(currentTrack.id) ?? false;
+
+  const handleFavoriteClick = () => {
+    if (isFav) {
+      removeFavorite.mutate(
+        { trackId: currentTrack.id },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: getGetFavoriteIdsQueryKey() });
+            queryClient.invalidateQueries({ queryKey: getGetFavoritesQueryKey() });
+          }
+        }
+      );
+    } else {
+      addFavorite.mutate(
+        { 
+          data: { 
+            trackId: currentTrack.id, 
+            title: currentTrack.title, 
+            artist: currentTrack.artist, 
+            album: currentTrack.album, 
+            duration: currentTrack.duration, 
+            previewUrl: currentTrack.previewUrl, 
+            artworkUrl: currentTrack.artworkUrl, 
+            genre: currentTrack.genre, 
+            releaseYear: currentTrack.releaseYear 
+          } 
+        },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: getGetFavoriteIdsQueryKey() });
+            queryClient.invalidateQueries({ queryKey: getGetFavoritesQueryKey() });
+          }
+        }
+      );
+    }
+  };
 
   const handleDownload = async () => {
     if (!currentTrack.previewUrl) return;
@@ -44,8 +88,11 @@ export function PlayerBar() {
           <span className="text-sm text-white font-medium truncate">{currentTrack.title}</span>
           <span className="text-xs text-muted-foreground truncate">{currentTrack.artist}</span>
         </div>
-        <button className="text-muted-foreground hover:text-white transition-colors">
-          <Heart className="w-4 h-4" />
+        <button 
+          onClick={handleFavoriteClick}
+          className={`transition-colors ${isFav ? 'text-primary fill-current' : 'text-muted-foreground hover:text-white'}`}
+        >
+          <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
         </button>
       </div>
 

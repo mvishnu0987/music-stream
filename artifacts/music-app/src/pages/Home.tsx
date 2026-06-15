@@ -8,7 +8,7 @@ const GENRES = ["All", "Pop", "Rock", "Hip-Hop", "Electronic", "Jazz", "Classica
 
 export default function Home() {
   const [selectedGenre, setSelectedGenre] = useState<string>("All");
-  const { data: topTracks } = useGetTopTracks(selectedGenre !== "All" ? { genre: selectedGenre.toLowerCase() } : {});
+  const { data: topTracks } = useGetTopTracks(selectedGenre !== "All" ? { genre: selectedGenre } : {});
   const { play } = useMusicPlayer();
 
   return (
