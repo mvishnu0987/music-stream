@@ -103,7 +103,7 @@ export default function Search() {
     inputRef.current?.focus();
   };
 
-  const showHistory = focused && !shouldSearch && history.length > 0;
+  const showHistory = !shouldSearch && history.length > 0;
 
   const handleCreatePlaylistAndAdd = async (track: any) => {
     if (!newPlaylistName.trim()) return;
@@ -157,9 +157,12 @@ export default function Search() {
       {showHistory && (
         <div className="max-w-xl">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-white">Recent searches</h2>
+            <h2 className="text-base font-semibold text-white flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              Recent searches
+            </h2>
             <button
-              className="text-xs text-muted-foreground hover:text-white transition-colors"
+              className="text-xs text-muted-foreground hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-white/5"
               onClick={clearHistory}
             >
               Clear all
@@ -169,19 +172,16 @@ export default function Search() {
             {history.map((term) => (
               <div
                 key={term}
-                className="flex items-center justify-between group px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+                className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
                 onClick={() => handleHistoryClick(term)}
               >
-                <div className="flex items-center gap-3">
-                  <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span className="text-white text-sm">{term}</span>
-                </div>
+                <span className="text-white text-sm">{term}</span>
                 <button
-                  className="text-muted-foreground hover:text-red-400 p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                  className="text-muted-foreground hover:text-red-400 p-1.5 rounded-full hover:bg-white/10 transition-colors shrink-0 ml-2"
                   onClick={(e) => { e.stopPropagation(); removeEntry(term); }}
-                  title="Remove from history"
+                  title="Remove"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             ))}
@@ -366,10 +366,19 @@ export default function Search() {
       )}
 
       {shouldSearch && !isLoading && !isError && results && results.length === 0 && (
-        <div className="text-muted-foreground mt-8 text-center py-16">
-          <SearchIcon className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="text-lg font-medium">No results found</p>
-          <p className="text-sm mt-1">Try a different search term</p>
+        <div className="mt-8 text-center py-16 space-y-3">
+          <SearchIcon className="w-12 h-12 mx-auto opacity-30 text-muted-foreground" />
+          <p className="text-lg font-medium text-white">No results found for &ldquo;{debouncedQuery}&rdquo;</p>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+            Our library contains CC-licensed music — primarily English, electronic, jazz, and world genres.
+            Regional-language songs (Telugu, Hindi, Tamil, etc.) are not available here.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Try searching for a genre, mood, or instrument — e.g.&nbsp;
+            <button className="text-primary underline-offset-2 hover:underline" onClick={() => { setQuery("jazz"); setDebouncedQuery("jazz"); }}>jazz</button>,&nbsp;
+            <button className="text-primary underline-offset-2 hover:underline" onClick={() => { setQuery("ambient"); setDebouncedQuery("ambient"); }}>ambient</button>, or&nbsp;
+            <button className="text-primary underline-offset-2 hover:underline" onClick={() => { setQuery("rock"); setDebouncedQuery("rock"); }}>rock</button>
+          </p>
         </div>
       )}
 
