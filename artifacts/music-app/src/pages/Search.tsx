@@ -129,9 +129,9 @@ export default function Search() {
                   <span className="text-white text-sm">{term}</span>
                 </div>
                 <button
-                  className="text-muted-foreground hover:text-white opacity-0 group-hover:opacity-100 transition-all p-1 rounded"
+                  className="text-muted-foreground hover:text-red-400 p-1.5 rounded-full hover:bg-white/10 transition-colors"
                   onClick={(e) => { e.stopPropagation(); removeEntry(term); }}
-                  title="Remove"
+                  title="Remove from history"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>

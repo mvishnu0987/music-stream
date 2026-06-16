@@ -67,12 +67,10 @@ interface CcmixterTrack {
 
 function getMp3Url(track: CcmixterTrack): string | null {
   if (!track.files || track.files.length === 0) return null;
-  // Prefer explicit mp3 file
   const mp3 = track.files.find(
     (f) => f.download_url && (f.download_url.endsWith(".mp3") || f.file_format_info?.default_ext === "mp3")
   );
   if (mp3?.download_url) return mp3.download_url;
-  // Fallback to first file with a URL
   const first = track.files.find((f) => f.download_url);
   return first?.download_url || null;
 }
@@ -86,12 +84,20 @@ function getGenreFromTags(tags: string): string | null {
   return null;
 }
 
+export function toProxyUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("/api/music/proxy")) return url;
+  if (/ccmixter\.org/i.test(url)) {
+    return `/api/music/proxy?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
 function mapCcmixterTrack(t: CcmixterTrack) {
   const audioUrl = getMp3Url(t);
   const artist = t.user_real_name || t.user_name || "Unknown Artist";
   const genre = t.upload_tags ? getGenreFromTags(t.upload_tags) : null;
   const releaseYear = t.upload_date_format ? parseInt(t.upload_date_format.slice(0, 4)) : null;
-  // Use a consistent placeholder image based on track ID
   const artworkUrl = `https://picsum.photos/seed/${t.upload_id}/300/300`;
 
   return {
@@ -99,15 +105,14 @@ function mapCcmixterTrack(t: CcmixterTrack) {
     title: t.upload_name || "Unknown Track",
     artist,
     album: "ccMixter",
-    duration: 180000, // ccMixter doesn't return duration; estimate 3 min
-    previewUrl: audioUrl,
+    duration: 180000,
+    previewUrl: toProxyUrl(audioUrl),
     artworkUrl,
     genre,
     releaseYear: isNaN(releaseYear ?? NaN) ? null : releaseYear,
   };
 }
 
-// Simple in-memory cache (30 min TTL)
 interface CacheEntry { data: ReturnType<typeof mapCcmixterTrack>[]; expiresAt: number }
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 30 * 60 * 1000;
@@ -129,6 +134,91 @@ async function fetchCcmixter(params: Record<string, string>): Promise<CcmixterTr
   const data = JSON.parse(body) as CcmixterTrack[];
   return (data || []).filter((t) => t.upload_id && getMp3Url(t));
 }
+
+// GET /api/music/proxy?url=... — streams audio from ccMixter through our server
+router.get("/music/proxy", (req, res) => {
+  const rawUrl = req.query.url as string;
+  if (!rawUrl) return res.status(400).end();
+
+  let targetUrl: string;
+  try {
+    targetUrl = decodeURIComponent(rawUrl);
+    if (!/ccmixter\.org/i.test(targetUrl)) {
+      return res.status(403).end();
+    }
+  } catch {
+    return res.status(400).end();
+  }
+
+  const doRequest = (urlStr: string, redirectCount = 0) => {
+    if (redirectCount > 5) {
+      if (!res.headersSent) res.status(502).end();
+      return;
+    }
+
+    const parsed = new URL(urlStr);
+    const isHttps = parsed.protocol === "https:";
+    const transport = isHttps ? https : http;
+
+    const headers: Record<string, string> = {
+      "User-Agent": "Mozilla/5.0 (compatible; MelodifyApp/1.0)",
+      "Referer": "https://ccmixter.org/",
+      "Accept": "audio/*,*/*",
+    };
+    if (req.headers.range) headers["Range"] = req.headers.range;
+
+    const proxyReq = transport.request(
+      {
+        hostname: parsed.hostname,
+        path: parsed.pathname + parsed.search,
+        method: "GET",
+        ...(isHttps ? { agent: INSECURE_AGENT } : {}),
+        headers,
+      },
+      (proxyRes) => {
+        if (
+          proxyRes.statusCode &&
+          proxyRes.statusCode >= 300 &&
+          proxyRes.statusCode < 400 &&
+          proxyRes.headers.location
+        ) {
+          proxyRes.resume();
+          doRequest(proxyRes.headers.location, redirectCount + 1);
+          return;
+        }
+
+        const resHeaders: Record<string, string> = {
+          "Content-Type": (proxyRes.headers["content-type"] as string) || "audio/mpeg",
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "public, max-age=3600",
+        };
+        if (proxyRes.headers["content-length"]) {
+          resHeaders["Content-Length"] = proxyRes.headers["content-length"] as string;
+        }
+        if (proxyRes.headers["content-range"]) {
+          resHeaders["Content-Range"] = proxyRes.headers["content-range"] as string;
+        }
+
+        res.writeHead(proxyRes.statusCode || 200, resHeaders);
+        proxyRes.pipe(res);
+      }
+    );
+
+    proxyReq.on("error", (err) => {
+      req.log.error({ err }, "Audio proxy error");
+      if (!res.headersSent) res.status(502).end();
+    });
+
+    proxyReq.setTimeout(30000, () => {
+      proxyReq.destroy();
+      if (!res.headersSent) res.status(504).end();
+    });
+
+    proxyReq.end();
+  };
+
+  doRequest(targetUrl);
+});
 
 // GET /api/music/search?q=...&limit=...
 router.get("/music/search", async (req, res) => {
@@ -154,9 +244,11 @@ router.get("/music/search", async (req, res) => {
   }
 });
 
-// GET /api/music/top?genre=...
+// GET /api/music/top?genre=...&offset=...&limit=...
 router.get("/music/top", async (req, res) => {
   const genre = req.query.genre as string | undefined;
+  const offset = Math.max(0, Number(req.query.offset) || 0);
+  const limit = Math.min(Number(req.query.limit) || 50, 100);
 
   const genreTagMap: Record<string, string> = {
     Pop: "pop",
@@ -170,12 +262,12 @@ router.get("/music/top", async (req, res) => {
     Indie: "indie",
   };
 
-  const cacheKey = `top:${genre || "all"}`;
+  const cacheKey = `top:${genre || "all"}:${offset}:${limit}`;
   const cached = getCached(cacheKey);
   if (cached) return res.json(cached);
 
   try {
-    const params: Record<string, string> = { limit: "30", sort: "num_scores" };
+    const params: Record<string, string> = { limit: String(limit), sort: "num_scores", offset: String(offset) };
     if (genre && genreTagMap[genre]) {
       params.tags = genreTagMap[genre];
     }

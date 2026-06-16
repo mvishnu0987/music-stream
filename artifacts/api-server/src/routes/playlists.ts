@@ -7,6 +7,7 @@ import {
   UpdatePlaylistBody,
   AddTrackToPlaylistBody,
 } from "@workspace/api-zod";
+import { toProxyUrl } from "./music.js";
 
 const router = Router();
 
@@ -100,7 +101,7 @@ router.get("/playlists/:playlistId", async (req, res) => {
         artist: t.artist,
         album: t.album,
         duration: t.duration,
-        previewUrl: t.previewUrl,
+        previewUrl: toProxyUrl(t.previewUrl),
         artworkUrl: t.artworkUrl,
         genre: t.genre,
         releaseYear: t.releaseYear,
@@ -231,7 +232,7 @@ router.post("/playlists/:playlistId/tracks", async (req, res) => {
         artist: t.artist,
         album: t.album,
         duration: t.duration,
-        previewUrl: t.previewUrl,
+        previewUrl: toProxyUrl(t.previewUrl),
         artworkUrl: t.artworkUrl,
         genre: t.genre,
         releaseYear: t.releaseYear,
@@ -279,7 +280,7 @@ router.delete("/playlists/:playlistId/tracks/:trackId", async (req, res) => {
         artist: t.artist,
         album: t.album,
         duration: t.duration,
-        previewUrl: t.previewUrl,
+        previewUrl: toProxyUrl(t.previewUrl),
         artworkUrl: t.artworkUrl,
         genre: t.genre,
         releaseYear: t.releaseYear,

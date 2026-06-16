@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { favoritesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { AddTrackToPlaylistBody } from "@workspace/api-zod";
+import { toProxyUrl } from "./music.js";
 
 const router = Router();
 
@@ -13,7 +14,7 @@ function formatFavorite(f: typeof favoritesTable.$inferSelect) {
     artist: f.artist,
     album: f.album,
     duration: f.duration,
-    previewUrl: f.previewUrl,
+    previewUrl: toProxyUrl(f.previewUrl),
     artworkUrl: f.artworkUrl,
     genre: f.genre,
     releaseYear: f.releaseYear,
