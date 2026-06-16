@@ -220,21 +220,22 @@ router.get("/music/proxy", (req, res): void => {
   doRequest(targetUrl);
 });
 
-// GET /api/music/search?q=...&limit=...
+// GET /api/music/search?q=...&limit=...&offset=...
 router.get("/music/search", async (req, res) => {
   const q = req.query.q as string;
-  const limit = Math.min(Number(req.query.limit) || 25, 50);
+  const limit = Math.min(Number(req.query.limit) || 50, 100);
+  const offset = Math.max(0, Number(req.query.offset) || 0);
 
   if (!q || q.trim().length === 0) {
     return res.status(400).json({ error: "Query parameter q is required" });
   }
 
-  const cacheKey = `search:${q.toLowerCase()}:${limit}`;
+  const cacheKey = `search:${q.toLowerCase()}:${limit}:${offset}`;
   const cached = getCached(cacheKey);
   if (cached) return res.json(cached);
 
   try {
-    const raw = await fetchCcmixter({ q, limit: String(limit) });
+    const raw = await fetchCcmixter({ q, limit: String(limit), skip: String(offset) });
     const tracks = raw.map(mapCcmixterTrack);
     setCache(cacheKey, tracks);
     return res.json(tracks);

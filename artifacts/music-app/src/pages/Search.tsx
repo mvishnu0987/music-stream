@@ -23,7 +23,11 @@ export default function Search() {
 
   const [results, setResults] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [searchOffset, setSearchOffset] = useState(0);
+  const PAGE_SIZE = 50;
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query.trim()), 300);
@@ -36,17 +40,45 @@ export default function Search() {
     if (!shouldSearch) {
       setResults([]);
       setIsError(false);
+      setHasMore(false);
+      setSearchOffset(0);
       return;
     }
     const controller = new AbortController();
     setIsLoading(true);
     setIsError(false);
-    fetch(`/api/music/search?q=${encodeURIComponent(debouncedQuery)}&limit=20`, { signal: controller.signal })
+    setSearchOffset(0);
+    fetch(`/api/music/search?q=${encodeURIComponent(debouncedQuery)}&limit=${PAGE_SIZE}`, { signal: controller.signal })
       .then(r => r.json())
-      .then((data: Track[]) => { setResults(data); setIsLoading(false); })
+      .then((data: Track[]) => {
+        const unique = Array.from(new Map(data.map(t => [t.id, t])).values());
+        setResults(unique);
+        setHasMore(data.length >= PAGE_SIZE);
+        setSearchOffset(data.length);
+        setIsLoading(false);
+      })
       .catch(err => { if (err.name !== "AbortError") { setIsError(true); setIsLoading(false); } });
     return () => controller.abort();
   }, [debouncedQuery, shouldSearch]);
+
+  const handleLoadMore = async () => {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const res = await fetch(`/api/music/search?q=${encodeURIComponent(debouncedQuery)}&limit=${PAGE_SIZE}&offset=${searchOffset}`);
+      const data: Track[] = await res.json();
+      setResults(prev => {
+        const seen = new Set(prev.map(t => t.id));
+        return [...prev, ...data.filter(t => !seen.has(t.id))];
+      });
+      setHasMore(data.length >= PAGE_SIZE);
+      setSearchOffset(prev => prev + data.length);
+    } catch {
+      // silently fail on load more
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   const { play } = useMusicPlayer();
   const { history, addEntry, removeEntry, clearHistory } = useSearchHistory();
@@ -177,9 +209,12 @@ export default function Search() {
 
       {!isLoading && results && results.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-bold">
-            Results for &ldquo;{debouncedQuery}&rdquo;
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">
+              Results for &ldquo;{debouncedQuery}&rdquo;
+            </h2>
+            <span className="text-sm text-muted-foreground">{results.length} tracks</span>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {results.map((track) => (
               <div
@@ -315,6 +350,18 @@ export default function Search() {
               </div>
             ))}
           </div>
+
+          {hasMore && (
+            <div className="flex justify-center pt-4">
+              <button
+                className="bg-white/10 hover:bg-white/20 text-white px-8 py-2 rounded-full text-sm font-medium transition-colors disabled:opacity-50"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+              >
+                {isLoadingMore ? "Loading…" : "Load More"}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
