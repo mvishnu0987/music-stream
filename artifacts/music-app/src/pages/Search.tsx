@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useSearchMusic, getSearchMusicQueryKey, useGetPlaylists, useAddTrackToPlaylist, useCreatePlaylist, getGetPlaylistsQueryKey } from "@workspace/api-client-react";
+import type { Track } from "@workspace/api-client-react";
+import { useGetPlaylists, useAddTrackToPlaylist, useCreatePlaylist, getGetPlaylistsQueryKey } from "@workspace/api-client-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { useSearchHistory } from "@/hooks/use-search-history";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,10 @@ export default function Search() {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [results, setResults] = useState<Track[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query.trim()), 300);
     return () => clearTimeout(t);
@@ -27,11 +32,21 @@ export default function Search() {
 
   const shouldSearch = debouncedQuery.length >= 2;
 
-  const searchParams = { q: debouncedQuery || " ", limit: 20 };
-  const { data: results, isLoading, isError } = useSearchMusic(
-    searchParams,
-    { query: { enabled: shouldSearch, queryKey: getSearchMusicQueryKey(searchParams) } }
-  );
+  useEffect(() => {
+    if (!shouldSearch) {
+      setResults([]);
+      setIsError(false);
+      return;
+    }
+    const controller = new AbortController();
+    setIsLoading(true);
+    setIsError(false);
+    fetch(`/api/music/search?q=${encodeURIComponent(debouncedQuery)}&limit=20`, { signal: controller.signal })
+      .then(r => r.json())
+      .then((data: Track[]) => { setResults(data); setIsLoading(false); })
+      .catch(err => { if (err.name !== "AbortError") { setIsError(true); setIsLoading(false); } });
+    return () => controller.abort();
+  }, [debouncedQuery, shouldSearch]);
 
   const { play } = useMusicPlayer();
   const { history, addEntry, removeEntry, clearHistory } = useSearchHistory();
