@@ -136,21 +136,21 @@ async function fetchCcmixter(params: Record<string, string>): Promise<CcmixterTr
 }
 
 // GET /api/music/proxy?url=... — streams audio from ccMixter through our server
-router.get("/music/proxy", (req, res) => {
+router.get("/music/proxy", (req, res): void => {
   const rawUrl = req.query.url as string;
-  if (!rawUrl) return res.status(400).end();
+  if (!rawUrl) { res.status(400).end(); return; }
 
   let targetUrl: string;
   try {
     targetUrl = decodeURIComponent(rawUrl);
     if (!/ccmixter\.org/i.test(targetUrl)) {
-      return res.status(403).end();
+      res.status(403).end(); return;
     }
   } catch {
-    return res.status(400).end();
+    res.status(400).end(); return;
   }
 
-  const doRequest = (urlStr: string, redirectCount = 0) => {
+  const doRequest = (urlStr: string, redirectCount = 0): void => {
     if (redirectCount > 5) {
       if (!res.headersSent) res.status(502).end();
       return;

@@ -23,7 +23,8 @@ export default function Home() {
 
   useEffect(() => {
     if (topTracks) {
-      setAllTracks(topTracks);
+      const unique = Array.from(new Map(topTracks.map(t => [t.id, t])).values());
+      setAllTracks(unique);
       setHasMore(topTracks.length >= PAGE_SIZE);
       setOffset(topTracks.length);
     }
@@ -112,7 +113,10 @@ export default function Home() {
                       const res = await fetch(`/api/music/top?${qs}`);
                       const more: Track[] = await res.json();
                       if (more.length < PAGE_SIZE) setHasMore(false);
-                      setAllTracks(prev => [...prev, ...more]);
+                      setAllTracks(prev => {
+                        const seen = new Set(prev.map(t => t.id));
+                        return [...prev, ...more.filter(t => !seen.has(t.id))];
+                      });
                       setOffset(prev => prev + more.length);
                     } catch {
                       setHasMore(false);

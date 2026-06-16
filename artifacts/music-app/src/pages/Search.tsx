@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useSearchMusic, useGetPlaylists, useAddTrackToPlaylist, useCreatePlaylist, getGetPlaylistsQueryKey } from "@workspace/api-client-react";
+import { useSearchMusic, getSearchMusicQueryKey, useGetPlaylists, useAddTrackToPlaylist, useCreatePlaylist, getGetPlaylistsQueryKey } from "@workspace/api-client-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { useSearchHistory } from "@/hooks/use-search-history";
 import { Input } from "@/components/ui/input";
@@ -27,9 +27,10 @@ export default function Search() {
 
   const shouldSearch = debouncedQuery.length >= 2;
 
+  const searchParams = { q: debouncedQuery || " ", limit: 20 };
   const { data: results, isLoading, isError } = useSearchMusic(
-    { q: debouncedQuery || " ", limit: 20 },
-    { query: { enabled: shouldSearch } }
+    searchParams,
+    { query: { enabled: shouldSearch, queryKey: getSearchMusicQueryKey(searchParams) } }
   );
 
   const { play } = useMusicPlayer();

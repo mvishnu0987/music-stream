@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useRoute } from "wouter";
-import { useGetPlaylist, useRemoveTrackFromPlaylist, useUpdatePlaylist, getGetPlaylistQueryKey } from "@workspace/api-client-react";
+import { useGetPlaylist, getGetPlaylistQueryKey, useRemoveTrackFromPlaylist, useUpdatePlaylist } from "@workspace/api-client-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { Play, Shuffle, Trash2, Edit2, Download, Clock } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,7 +18,7 @@ export default function PlaylistDetail() {
   const [, params] = useRoute("/playlist/:id");
   const playlistId = Number(params?.id);
   
-  const { data: playlist, isLoading } = useGetPlaylist(playlistId, { query: { enabled: !!playlistId } });
+  const { data: playlist, isLoading } = useGetPlaylist(playlistId, { query: { enabled: !!playlistId, queryKey: getGetPlaylistQueryKey(playlistId) } });
   const { play, toggleShuffle, isShuffled } = useMusicPlayer();
   const removeTrack = useRemoveTrackFromPlaylist();
   const updatePlaylist = useUpdatePlaylist();
