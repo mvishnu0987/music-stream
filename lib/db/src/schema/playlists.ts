@@ -6,6 +6,7 @@ export const playlistsTable = pgTable("playlists", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  userId: text("user_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

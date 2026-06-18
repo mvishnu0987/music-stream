@@ -2,7 +2,8 @@ import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
 
 export const favoritesTable = pgTable("favorites", {
   id: serial("id").primaryKey(),
-  trackId: text("track_id").notNull().unique(),
+  trackId: text("track_id").notNull(),
+  userId: text("user_id"),
   title: text("title").notNull(),
   artist: text("artist").notNull(),
   album: text("album").notNull(),

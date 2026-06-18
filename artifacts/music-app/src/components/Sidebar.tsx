@@ -1,16 +1,24 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
 import { Home, Search, Library, Plus, Heart } from "lucide-react";
-import { useGetPlaylists, useCreatePlaylist } from "@workspace/api-client-react";
-import { Button } from "@/components/ui/button";
+import { useGetPlaylists, useCreatePlaylist, getGetPlaylistsQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function Sidebar() {
   const [location] = useLocation();
   const { data: playlists } = useGetPlaylists();
   const createPlaylist = useCreatePlaylist();
+  const queryClient = useQueryClient();
 
   const handleCreatePlaylist = () => {
-    createPlaylist.mutate({ data: { name: `My Playlist #${(playlists?.length || 0) + 1}` } });
+    createPlaylist.mutate(
+      { data: { name: `My Playlist #${(playlists?.length || 0) + 1}` } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetPlaylistsQueryKey() });
+        }
+      }
+    );
   };
 
   return (

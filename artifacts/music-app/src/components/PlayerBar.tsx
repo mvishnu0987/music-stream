@@ -1,6 +1,6 @@
 import React from "react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Volume2, Heart, Download } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Volume2, Heart, Download, Activity, FileText } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { useAddFavorite, useRemoveFavorite, useGetFavoriteIds, getGetFavoriteIdsQueryKey, getGetFavoritesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,7 +15,8 @@ export function PlayerBar() {
   const { 
     currentTrack, isPlaying, currentTime, volume, 
     isShuffled, repeatMode, 
-    resume, pause, next, prev, seek, setVolume, toggleShuffle, toggleRepeat 
+    resume, pause, next, prev, seek, setVolume, toggleShuffle, toggleRepeat,
+    activeWidgetTab, isWidgetOpen, toggleWidget, setWidgetTab
   } = useMusicPlayer();
 
   const queryClient = useQueryClient();
@@ -82,7 +83,7 @@ export function PlayerBar() {
 
   return (
     <div className="h-24 bg-card border-t border-border flex items-center justify-between px-4 w-full shrink-0 z-50">
-      <div className="flex items-center w-[30%] min-w-[180px]">
+      <div className="flex items-center w-[25%] min-w-[180px]">
         <img src={currentTrack.artworkUrl} alt={currentTrack.title} className="w-14 h-14 rounded shadow-md object-cover mr-4" />
         <div className="flex flex-col overflow-hidden mr-4">
           <span className="text-sm text-white font-medium truncate">{currentTrack.title}</span>
@@ -128,9 +129,44 @@ export function PlayerBar() {
         </div>
       </div>
 
-      <div className="flex items-center w-[30%] justify-end gap-4 min-w-[180px]">
+      <div className="flex items-center w-[40%] justify-end gap-4 min-w-[220px]">
+        {/* Toggle Real-time Widgets */}
+        <div className="flex items-center gap-1 border-r border-white/10 pr-3 hidden md:flex">
+          <button 
+            onClick={() => {
+              if (isWidgetOpen && activeWidgetTab === "visualizer") {
+                toggleWidget();
+              } else {
+                if (!isWidgetOpen) toggleWidget();
+                setWidgetTab("visualizer");
+              }
+            }}
+            className={`p-2 rounded-lg transition-colors hover:bg-white/5 ${isWidgetOpen && activeWidgetTab === "visualizer" ? 'text-primary' : 'text-muted-foreground hover:text-white'}`}
+            title="Live Visualizer"
+          >
+            <Activity className="w-4 h-4" />
+          </button>
+          
+          <button 
+            onClick={() => {
+              if (isWidgetOpen && activeWidgetTab === "lyrics") {
+                toggleWidget();
+              } else {
+                if (!isWidgetOpen) toggleWidget();
+                setWidgetTab("lyrics");
+              }
+            }}
+            className={`p-2 rounded-lg transition-colors hover:bg-white/5 ${isWidgetOpen && activeWidgetTab === "lyrics" ? 'text-primary' : 'text-muted-foreground hover:text-white'}`}
+            title="Lyrics"
+          >
+            <FileText className="w-4 h-4" />
+          </button>
+
+
+        </div>
+
         {currentTrack.previewUrl && (
-          <button onClick={handleDownload} className="text-muted-foreground hover:text-white transition-colors" title="Download Preview">
+          <button onClick={handleDownload} className="text-muted-foreground hover:text-white transition-colors" title="Download Song">
             <Download className="w-4 h-4" />
           </button>
         )}

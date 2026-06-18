@@ -20,6 +20,10 @@ interface MusicPlayerContextType {
   seek: (time: number) => void;
   setVolume: (volume: number) => void;
   volume: number;
+  activeWidgetTab: "lyrics" | "visualizer";
+  isWidgetOpen: boolean;
+  toggleWidget: () => void;
+  setWidgetTab: (tab: "lyrics" | "visualizer") => void;
 }
 
 const MusicPlayerContext = createContext<MusicPlayerContextType | null>(null);
@@ -34,6 +38,10 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
   const [repeatMode, setRepeatMode] = useState<"none" | "one" | "all">("none");
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolumeState] = useState(1);
+  const [activeWidgetTab, setWidgetTab] = useState<"lyrics" | "visualizer">("visualizer");
+  const [isWidgetOpen, setIsWidgetOpen] = useState(false);
+
+  const toggleWidget = useCallback(() => setIsWidgetOpen(prev => !prev), []);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -205,6 +213,10 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         seek,
         setVolume,
         volume,
+        activeWidgetTab,
+        isWidgetOpen,
+        toggleWidget,
+        setWidgetTab,
       }}
     >
       {children}
