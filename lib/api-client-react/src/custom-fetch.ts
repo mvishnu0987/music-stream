@@ -290,6 +290,23 @@ function inferResponseType(response: Response): "json" | "text" | "blob" {
   return "blob";
 }
 
+function transformUrls(obj: any): any {
+  if (!obj || typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) return obj.map(transformUrls);
+  
+  const res: any = {};
+  for (const key of Object.keys(obj)) {
+    let val = obj[key];
+    if (key === "previewUrl" && typeof val === "string" && val.startsWith("/") && _baseUrl) {
+      val = `${_baseUrl}${val}`;
+    } else {
+      val = transformUrls(val);
+    }
+    res[key] = val;
+  }
+  return res;
+}
+
 async function parseSuccessBody(
   response: Response,
   responseType: "json" | "text" | "blob" | "auto",
@@ -303,8 +320,10 @@ async function parseSuccessBody(
     responseType === "auto" ? inferResponseType(response) : responseType;
 
   switch (effectiveType) {
-    case "json":
-      return parseJsonBody(response, requestInfo);
+    case "json": {
+      const data = await parseJsonBody(response, requestInfo);
+      return transformUrls(data);
+    }
 
     case "text": {
       const text = await response.text();
