@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useGetTopTracks, useGetPlaylists, useAddTrackToPlaylist, useCreatePlaylist, getGetPlaylistsQueryKey } from "@workspace/api-client-react";
+import { useGetTopTracks, useGetPlaylists, useAddTrackToPlaylist, useCreatePlaylist, getGetPlaylistsQueryKey, customFetch } from "@workspace/api-client-react";
 import type { Track } from "@workspace/api-client-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { Play, Pause, Disc, Heart, Music, Flame, Globe, Plus, Download } from "lucide-react";
@@ -402,8 +402,7 @@ export default function Home() {
                       } else {
                         qs.set("language", selectedLanguage);
                       }
-                      const res = await fetch(`/api/music/top?${qs}`);
-                      const more: Track[] = await res.json();
+                      const more = await customFetch<Track[]>(`/api/music/top?${qs}`);
                       if (more.length < PAGE_SIZE) setHasMore(false);
                       setAllTracks(prev => {
                         const seen = new Set(prev.map(t => t.id));

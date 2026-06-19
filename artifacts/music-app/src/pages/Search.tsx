@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { Track } from "@workspace/api-client-react";
-import { useGetPlaylists, useAddTrackToPlaylist, useCreatePlaylist, getGetPlaylistsQueryKey } from "@workspace/api-client-react";
+import { useGetPlaylists, useAddTrackToPlaylist, useCreatePlaylist, getGetPlaylistsQueryKey, customFetch } from "@workspace/api-client-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { useSearchHistory } from "@/hooks/use-search-history";
 import { Input } from "@/components/ui/input";
@@ -59,8 +59,7 @@ export default function Search() {
     setIsLoading(true);
     setIsError(false);
     setSearchOffset(0);
-    fetch(`/api/music/search?q=${encodeURIComponent(debouncedQuery)}&limit=${PAGE_SIZE}`, { signal: controller.signal })
-      .then(r => r.json())
+    customFetch<Track[]>(`/api/music/search?q=${encodeURIComponent(debouncedQuery)}&limit=${PAGE_SIZE}`, { signal: controller.signal })
       .then((data: Track[]) => {
         const unique = Array.from(new Map(data.map(t => [t.id, t])).values());
         setResults(unique);
@@ -76,8 +75,7 @@ export default function Search() {
     if (isLoadingMore) return;
     setIsLoadingMore(true);
     try {
-      const res = await fetch(`/api/music/search?q=${encodeURIComponent(debouncedQuery)}&limit=${PAGE_SIZE}&offset=${searchOffset}`);
-      const data: Track[] = await res.json();
+      const data = await customFetch<Track[]>(`/api/music/search?q=${encodeURIComponent(debouncedQuery)}&limit=${PAGE_SIZE}&offset=${searchOffset}`);
       setResults(prev => {
         const seen = new Set(prev.map(t => t.id));
         return [...prev, ...data.filter(t => !seen.has(t.id))];
