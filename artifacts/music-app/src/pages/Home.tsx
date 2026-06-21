@@ -70,9 +70,10 @@ export default function Home() {
     });
   };
 
-  const params = selectedGenre !== "All"
-    ? ({ genre: selectedGenre } as any)
-    : ({ language: selectedLanguage } as any);
+  const params: any = { language: selectedLanguage };
+  if (selectedGenre !== "All") {
+    params.genre = selectedGenre;
+  }
 
   const { data: topTracks, isLoading } = useGetTopTracks(params);
 
@@ -87,7 +88,6 @@ export default function Home() {
 
   const handleLanguageChange = (lang: string) => {
     setSelectedLanguage(lang);
-    setSelectedGenre("All");
     setAllTracks([]);
     setOffset(0);
     setHasMore(true);
@@ -146,7 +146,7 @@ export default function Home() {
           {LANGUAGES.map((lang) => (
             <button
               key={lang.name}
-              className={`flex items-center gap-2 px-4.5 py-2.5 rounded-2xl border transition-all duration-200 shrink-0 font-medium ${selectedLanguage === lang.name && selectedGenre === "All"
+              className={`flex items-center gap-2 px-4.5 py-2.5 rounded-2xl border transition-all duration-200 shrink-0 font-medium ${selectedLanguage === lang.name
                 ? "bg-primary text-primary-foreground border-transparent shadow-lg shadow-primary/20 scale-[1.03]"
                 : "bg-white/5 border-white/5 text-white/80 hover:bg-white/10 hover:border-white/10"
                 }`}
@@ -397,10 +397,9 @@ export default function Home() {
                   onClick={async () => {
                     try {
                       const qs = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
+                      qs.set("language", selectedLanguage);
                       if (selectedGenre !== "All") {
                         qs.set("genre", selectedGenre);
-                      } else {
-                        qs.set("language", selectedLanguage);
                       }
                       const more = await customFetch<Track[]>(`/api/music/top?${qs}`);
                       if (more.length < PAGE_SIZE) setHasMore(false);

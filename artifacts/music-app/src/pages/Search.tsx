@@ -48,8 +48,8 @@ export default function Search() {
   const shouldSearch = debouncedQuery.length >= 2;
 
   useEffect(() => {
+    setResults([]);
     if (!shouldSearch) {
-      setResults([]);
       setIsError(false);
       setHasMore(false);
       setSearchOffset(0);

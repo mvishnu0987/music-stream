@@ -248,8 +248,17 @@ router.get("/music/search", async (req, res) => {
     const results = data.results || [];
     const tracks = results.map(mapJioSaavnTrack);
 
-    setCache(cacheKey, tracks);
-    return res.json(tracks);
+    // Deduplicate search results by title and artist case-insensitively to clean up results
+    const seen = new Set<string>();
+    const uniqueTracks = tracks.filter((t: any) => {
+      const key = `${t.title.toLowerCase().trim()}-${t.artist.toLowerCase().trim()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    setCache(cacheKey, uniqueTracks);
+    return res.json(uniqueTracks);
   } catch (err) {
     req.log.error({ err }, "JioSaavn search failed");
     return res.status(500).json({ error: "Failed to search music" });
@@ -262,28 +271,18 @@ router.get("/music/top", async (req, res) => {
   const genre = req.query.genre as string | undefined;
   const limit = Math.min(Number(req.query.limit) || 50, 100);
 
-  // If language is provided, fetch language-specific India Superhits chart
-  // Otherwise default to a combined Hindi + English chart
-  const selectedLang = language || "Hindi";
-  const playlistId = LANGUAGE_PLAYLISTS[selectedLang];
-
-  const cacheKey = `top:${selectedLang}:${genre || "all"}:${limit}`;
+  const hasGenre = genre && genre !== "All";
+  const cacheKey = `top:${language || "all"}:${genre || "all"}:${limit}`;
   const cached = getCached(cacheKey);
   if (cached) return res.json(cached);
 
   try {
     let tracks: any[] = [];
 
-    if (playlistId) {
-      // Fetch songs from curated playlist
-      const url = `${JIOSAAVN_BASE}?__call=playlist.getDetails&_format=json&_marker=0&cc=in&listid=${playlistId}`;
-      const body = await fetchUrl(url);
-      const data = JSON.parse(body);
-      const rawSongs = data.songs || [];
-      tracks = rawSongs.map(mapJioSaavnTrack);
-    } else if (genre) {
-      // Search for playlists with this genre, then fetch the first playlist's details
-      const playlistSearchUrl = `${JIOSAAVN_BASE}?__call=search.getPlaylistResults&_format=json&_marker=0&cc=in&q=${encodeURIComponent(genre + " hits")}&n=1`;
+    if (hasGenre) {
+      // Search for playlists with this language + genre combination or just genre
+      const query = language ? `${language} ${genre} hits` : `${genre} hits`;
+      const playlistSearchUrl = `${JIOSAAVN_BASE}?__call=search.getPlaylistResults&_format=json&_marker=0&cc=in&q=${encodeURIComponent(query)}&n=1`;
       const searchBody = await fetchUrl(playlistSearchUrl);
       const searchData = JSON.parse(searchBody);
       const listid = searchData.results?.[0]?.listid;
@@ -295,11 +294,27 @@ router.get("/music/top", async (req, res) => {
         const rawSongs = data.songs || [];
         tracks = rawSongs.map(mapJioSaavnTrack);
       }
+    } else if (language) {
+      const playlistId = LANGUAGE_PLAYLISTS[language];
+      if (playlistId) {
+        const url = `${JIOSAAVN_BASE}?__call=playlist.getDetails&_format=json&_marker=0&cc=in&listid=${playlistId}`;
+        const body = await fetchUrl(url);
+        const data = JSON.parse(body);
+        const rawSongs = data.songs || [];
+        tracks = rawSongs.map(mapJioSaavnTrack);
+      }
     }
 
     // Fallback: If no tracks fetched, try global search for generic hits
     if (tracks.length === 0) {
-      const fallbackUrl = `${JIOSAAVN_BASE}?__call=search.getResults&_format=json&_marker=0&cc=in&q=${encodeURIComponent(selectedLang + " hits")}&n=${limit}`;
+      const q = language && hasGenre
+        ? `${language} ${genre} hits`
+        : language
+        ? `${language} hits`
+        : hasGenre
+        ? `${genre} hits`
+        : "Hindi hits";
+      const fallbackUrl = `${JIOSAAVN_BASE}?__call=search.getResults&_format=json&_marker=0&cc=in&q=${encodeURIComponent(q)}&n=${limit}`;
       const body = await fetchUrl(fallbackUrl);
       const data = JSON.parse(body);
       const rawSongs = data.results || [];
