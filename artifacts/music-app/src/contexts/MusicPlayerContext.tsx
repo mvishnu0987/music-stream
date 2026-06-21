@@ -45,6 +45,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
   const toggleWidget = useCallback(() => setIsWidgetOpen(prev => !prev), []);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const nextRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -58,9 +59,9 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     const handleEnded = () => {
       if (repeatMode === "one") {
         audio.currentTime = 0;
-        audio.play();
+        audio.play().catch(console.error);
       } else {
-        next();
+        nextRef.current();
       }
     };
     const handlePlay = () => setIsPlaying(true);
@@ -138,6 +139,10 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
       if (audioRef.current) audioRef.current.currentTime = 0;
     }
   }, [queue, currentIndex, repeatMode, pause]);
+
+  useEffect(() => {
+    nextRef.current = next;
+  }, [next]);
 
   const prev = useCallback(() => {
     if (queue.length === 0) return;
