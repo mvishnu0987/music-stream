@@ -258,43 +258,41 @@ export default function Search() {
       </div>
 
       {/* Search Type Tabs */}
-      {(query.length > 0 || shouldSearch) && (
-        <div className="flex gap-2 border-b border-white/5 pb-2">
-          <button
-            onClick={() => setSearchType("songs")}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all ${
-              searchType === "songs"
-                ? "bg-primary text-primary-foreground shadow-lg"
-                : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-white"
-            }`}
-          >
-            <Music className="w-4 h-4" />
-            Songs
-          </button>
-          <button
-            onClick={() => setSearchType("artists")}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all ${
-              searchType === "artists"
-                ? "bg-primary text-primary-foreground shadow-lg"
-                : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-white"
-            }`}
-          >
-            <Mic className="w-4 h-4" />
-            Singers
-          </button>
-          <button
-            onClick={() => setSearchType("albums")}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all ${
-              searchType === "albums"
-                ? "bg-primary text-primary-foreground shadow-lg"
-                : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-white"
-            }`}
-          >
-            <Film className="w-4 h-4" />
-            Movies
-          </button>
-        </div>
-      )}
+      <div className="flex gap-2 border-b border-white/5 pb-2">
+        <button
+          onClick={() => setSearchType("songs")}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all ${
+            searchType === "songs"
+              ? "bg-primary text-primary-foreground shadow-lg"
+              : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          <Music className="w-4 h-4" />
+          Songs
+        </button>
+        <button
+          onClick={() => setSearchType("artists")}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all ${
+            searchType === "artists"
+              ? "bg-primary text-primary-foreground shadow-lg"
+              : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          <Mic className="w-4 h-4" />
+          Singers
+        </button>
+        <button
+          onClick={() => setSearchType("albums")}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all ${
+            searchType === "albums"
+              ? "bg-primary text-primary-foreground shadow-lg"
+              : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          <Film className="w-4 h-4" />
+          Movies
+        </button>
+      </div>
 
       {/* Recent History Section */}
       {showHistory && (
