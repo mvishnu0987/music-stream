@@ -271,6 +271,45 @@ router.get("/music/search", async (req, res) => {
   }
 });
 
+async function paginateTracks(
+  tracks: any[],
+  offset: number,
+  limit: number,
+  language: string | undefined,
+  genre: string | undefined,
+  hasGenre: boolean
+): Promise<any[]> {
+  const paginated = tracks.slice(offset, offset + limit);
+  if (paginated.length < limit) {
+    const q = language && hasGenre
+      ? `${language} ${genre} hits`
+      : language
+      ? `${language} hits`
+      : hasGenre
+      ? `${genre} hits`
+      : "Hindi hits";
+
+    const searchPage = Math.floor(offset / limit) + 1;
+    try {
+      const searchUrl = `${JIOSAAVN_BASE}?__call=search.getResults&_format=json&_marker=0&cc=in&q=${encodeURIComponent(q)}&n=${limit}&p=${searchPage}`;
+      const searchBody = await fetchUrl(searchUrl);
+      const searchData = JSON.parse(searchBody);
+      const searchSongs = (searchData.results || []).map(mapJioSaavnTrack);
+
+      const seen = new Set(paginated.map(t => t.id));
+      for (const s of searchSongs) {
+        if (!seen.has(s.id) && !tracks.some(t => t.id === s.id)) {
+          paginated.push(s);
+          if (paginated.length >= limit) break;
+        }
+      }
+    } catch {
+      // ignore search failures during pagination
+    }
+  }
+  return paginated;
+}
+
 // GET /api/music/top?language=...&genre=...&offset=...&limit=...
 router.get("/music/top", async (req, res) => {
   const language = req.query.language as string | undefined;
@@ -282,7 +321,8 @@ router.get("/music/top", async (req, res) => {
   const cacheKey = `top:${language || "all"}:${genre || "all"}`;
   const cached = getCached(cacheKey);
   if (cached) {
-    return res.json(cached.slice(offset, offset + limit));
+    const paginated = await paginateTracks(cached, offset, limit, language, genre, hasGenre);
+    return res.json(paginated);
   }
 
   try {
@@ -331,10 +371,98 @@ router.get("/music/top", async (req, res) => {
     }
 
     setCache(cacheKey, tracks);
-    return res.json(tracks.slice(offset, offset + limit));
+    const paginated = await paginateTracks(tracks, offset, limit, language, genre, hasGenre);
+    return res.json(paginated);
   } catch (err) {
     req.log.error({ err }, "Get top tracks failed");
     return res.status(500).json({ error: "Failed to get top tracks" });
+  }
+});
+
+// GET /api/music/search/artists?q=...
+router.get("/music/search/artists", async (req, res) => {
+  const q = req.query.q as string;
+  if (!q || q.trim().length === 0) {
+    return res.status(400).json({ error: "Query is required" });
+  }
+  try {
+    const url = `${JIOSAAVN_BASE}?__call=search.getArtistResults&_format=json&_marker=0&cc=in&q=${encodeURIComponent(q)}&n=20`;
+    const body = await fetchUrl(url);
+    const data = JSON.parse(body);
+    const results = data.results || [];
+    return res.json(results.map((a: any) => ({
+      id: String(a.id || a.artistId),
+      name: a.name || a.title,
+      image: getHighQualityArtwork(a.image),
+      role: a.role || "Singer",
+      isVerified: a.isVerified === true || a.isVerified === "true"
+    })));
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to search artists" });
+  }
+});
+
+// GET /api/music/search/albums?q=...
+router.get("/music/search/albums", async (req, res) => {
+  const q = req.query.q as string;
+  if (!q || q.trim().length === 0) {
+    return res.status(400).json({ error: "Query is required" });
+  }
+  try {
+    const url = `${JIOSAAVN_BASE}?__call=search.getAlbumResults&_format=json&_marker=0&cc=in&q=${encodeURIComponent(q)}&n=20`;
+    const body = await fetchUrl(url);
+    const data = JSON.parse(body);
+    const results = data.results || [];
+    return res.json(results.map((a: any) => ({
+      id: String(a.id || a.albumid),
+      title: a.title || a.name,
+      artist: a.music || a.primary_artists || "Various Artists",
+      image: getHighQualityArtwork(a.image),
+      year: a.year ? Number(a.year) : null
+    })));
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to search albums" });
+  }
+});
+
+// GET /api/music/artist/:artistId
+router.get("/music/artist/:artistId", async (req, res) => {
+  const { artistId } = req.params;
+  try {
+    const url = `${JIOSAAVN_BASE}?__call=artist.getArtistPageDetails&_format=json&_marker=0&cc=in&artistId=${artistId}&n_song=50`;
+    const body = await fetchUrl(url);
+    const data = JSON.parse(body);
+    const rawSongs = data.topSongs?.songs || [];
+    const tracks = rawSongs.map(mapJioSaavnTrack);
+    return res.json({
+      id: String(data.artistId),
+      name: data.name,
+      image: getHighQualityArtwork(data.image),
+      tracks
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to get artist details" });
+  }
+});
+
+// GET /api/music/album/:albumId
+router.get("/music/album/:albumId", async (req, res) => {
+  const { albumId } = req.params;
+  try {
+    const url = `${JIOSAAVN_BASE}?__call=content.getAlbumDetails&_format=json&_marker=0&cc=in&albumid=${albumId}`;
+    const body = await fetchUrl(url);
+    const data = JSON.parse(body);
+    const rawSongs = data.songs || [];
+    const tracks = rawSongs.map(mapJioSaavnTrack);
+    return res.json({
+      id: String(data.id),
+      title: data.title,
+      artist: data.primary_artists || "Various Artists",
+      image: getHighQualityArtwork(data.image),
+      tracks
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to get album details" });
   }
 });
 
