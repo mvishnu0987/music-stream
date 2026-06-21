@@ -19,7 +19,7 @@ export default function PlaylistDetail() {
   const playlistId = Number(params?.id);
   
   const { data: playlist, isLoading } = useGetPlaylist(playlistId, { query: { enabled: !!playlistId, queryKey: getGetPlaylistQueryKey(playlistId) } });
-  const { play, toggleShuffle, isShuffled } = useMusicPlayer();
+  const { play, toggleShuffle, isShuffled, setIsShuffled } = useMusicPlayer();
   const removeTrack = useRemoveTrackFromPlaylist();
   const updatePlaylist = useUpdatePlaylist();
   const queryClient = useQueryClient();
@@ -32,16 +32,16 @@ export default function PlaylistDetail() {
 
   const handlePlayAll = () => {
     if (playlist.tracks.length > 0) {
-      if (isShuffled) toggleShuffle(); // ensure sequential play
-      play(playlist.tracks[0], playlist.tracks);
+      setIsShuffled(false);
+      play(playlist.tracks[0], playlist.tracks, false);
     }
   };
 
   const handleShuffleAll = () => {
     if (playlist.tracks.length > 0) {
-      if (!isShuffled) toggleShuffle(); // ensure shuffle mode
+      setIsShuffled(true);
       const randomTrack = playlist.tracks[Math.floor(Math.random() * playlist.tracks.length)];
-      play(randomTrack, playlist.tracks);
+      play(randomTrack, playlist.tracks, true);
     }
   };
 

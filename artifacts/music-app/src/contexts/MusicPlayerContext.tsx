@@ -9,12 +9,13 @@ interface MusicPlayerContextType {
   isShuffled: boolean;
   repeatMode: "none" | "one" | "all";
   currentTime: number;
-  play: (track: Track, newQueue?: Track[]) => void;
+  play: (track: Track, newQueue?: Track[], forceShuffle?: boolean) => void;
   pause: () => void;
   resume: () => void;
   next: () => void;
   prev: () => void;
   toggleShuffle: () => void;
+  setIsShuffled: (value: boolean) => void;
   toggleRepeat: () => void;
   addToQueue: (track: Track) => void;
   seek: (time: number) => void;
@@ -78,10 +79,11 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     };
   }, [repeatMode]);
 
-  const play = useCallback((track: Track, newQueue?: Track[]) => {
+  const play = useCallback((track: Track, newQueue?: Track[], forceShuffle?: boolean) => {
+    const shouldShuffle = forceShuffle !== undefined ? forceShuffle : isShuffled;
     if (newQueue) {
       setOriginalQueue(newQueue);
-      if (isShuffled) {
+      if (shouldShuffle) {
         const shuffled = [...newQueue].sort(() => Math.random() - 0.5);
         setQueue(shuffled);
         setCurrentIndex(shuffled.findIndex(t => t.id === track.id));
@@ -154,20 +156,23 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
   }, [queue, currentIndex, currentTime]);
 
   const toggleShuffle = useCallback(() => {
-    setIsShuffled(prev => !prev);
-    if (!isShuffled) {
-      const shuffled = [...queue].sort(() => Math.random() - 0.5);
-      setQueue(shuffled);
-      if (currentTrack) {
-        setCurrentIndex(shuffled.findIndex(t => t.id === currentTrack.id));
+    setIsShuffled(prev => {
+      const nextShuffled = !prev;
+      if (nextShuffled) {
+        const shuffled = [...queue].sort(() => Math.random() - 0.5);
+        setQueue(shuffled);
+        if (currentTrack) {
+          setCurrentIndex(shuffled.findIndex(t => t.id === currentTrack.id));
+        }
+      } else {
+        setQueue(originalQueue);
+        if (currentTrack) {
+          setCurrentIndex(originalQueue.findIndex(t => t.id === currentTrack.id));
+        }
       }
-    } else {
-      setQueue(originalQueue);
-      if (currentTrack) {
-        setCurrentIndex(originalQueue.findIndex(t => t.id === currentTrack.id));
-      }
-    }
-  }, [isShuffled, queue, originalQueue, currentTrack]);
+      return nextShuffled;
+    });
+  }, [queue, originalQueue, currentTrack]);
 
   const toggleRepeat = useCallback(() => {
     setRepeatMode(prev => prev === "none" ? "all" : prev === "all" ? "one" : "none");
@@ -208,6 +213,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         next,
         prev,
         toggleShuffle,
+        setIsShuffled,
         toggleRepeat,
         addToQueue,
         seek,
