@@ -274,11 +274,14 @@ router.get("/music/top", async (req, res) => {
   const language = req.query.language as string | undefined;
   const genre = req.query.genre as string | undefined;
   const limit = Math.min(Number(req.query.limit) || 50, 100);
+  const offset = Math.max(0, Number(req.query.offset) || 0);
 
   const hasGenre = genre && genre !== "All";
-  const cacheKey = `top:${language || "all"}:${genre || "all"}:${limit}`;
+  const cacheKey = `top:${language || "all"}:${genre || "all"}`;
   const cached = getCached(cacheKey);
-  if (cached) return res.json(cached);
+  if (cached) {
+    return res.json(cached.slice(offset, offset + limit));
+  }
 
   try {
     let tracks: any[] = [];
@@ -326,7 +329,7 @@ router.get("/music/top", async (req, res) => {
     }
 
     setCache(cacheKey, tracks);
-    return res.json(tracks);
+    return res.json(tracks.slice(offset, offset + limit));
   } catch (err) {
     req.log.error({ err }, "Get top tracks failed");
     return res.status(500).json({ error: "Failed to get top tracks" });
