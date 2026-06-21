@@ -44,6 +44,7 @@ function fetchUrl(urlStr: string, redirectCount = 0): Promise<string> {
           "Referer": "https://www.jiosaavn.com/",
           "X-Forwarded-For": "103.116.12.1",
           "X-Real-IP": "103.116.12.1",
+          "Cookie": "L=english;",
         },
       },
       (res) => {
@@ -173,6 +174,7 @@ router.get("/music/proxy", (req, res): void => {
       "Accept": "audio/*,*/*",
       "X-Forwarded-For": "103.116.12.1",
       "X-Real-IP": "103.116.12.1",
+      "Cookie": "L=english;",
     };
     if (req.headers.range) headers["Range"] = req.headers.range;
 
