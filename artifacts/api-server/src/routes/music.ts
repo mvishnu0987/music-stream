@@ -42,6 +42,8 @@ function fetchUrl(urlStr: string, redirectCount = 0): Promise<string> {
           "Accept": "application/json, */*",
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
           "Referer": "https://www.jiosaavn.com/",
+          "X-Forwarded-For": "103.116.12.1",
+          "X-Real-IP": "103.116.12.1",
         },
       },
       (res) => {
@@ -169,6 +171,8 @@ router.get("/music/proxy", (req, res): void => {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
       "Referer": "https://www.jiosaavn.com/",
       "Accept": "audio/*,*/*",
+      "X-Forwarded-For": "103.116.12.1",
+      "X-Real-IP": "103.116.12.1",
     };
     if (req.headers.range) headers["Range"] = req.headers.range;
 
