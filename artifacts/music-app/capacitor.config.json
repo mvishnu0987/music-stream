@@ -1,0 +1,8 @@
+{
+  "appId": "com.musicstream.app",
+  "appName": "Music Stream",
+  "webDir": "dist/public",
+  "server": {
+    "androidScheme": "https"
+  }
+}
