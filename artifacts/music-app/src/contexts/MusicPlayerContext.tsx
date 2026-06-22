@@ -50,6 +50,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
   const currentIndexRef = useRef<number>(-1);
   const isShuffledRef = useRef<boolean>(false);
   const repeatModeRef = useRef<"none" | "one" | "all">("none");
+  const isTransitioningRef = useRef<boolean>(false);
 
   const setCurrentTrack = useCallback((track: Track | null) => {
     setCurrentTrackState(track);
@@ -113,9 +114,13 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
       setCurrentTrack(nextTrack);
       const absoluteUrl = getAbsoluteUrl(nextTrack.previewUrl);
       if (audioRef.current && absoluteUrl) {
+        isTransitioningRef.current = true;
         audioRef.current.src = absoluteUrl;
         audioRef.current.load();
-        audioRef.current.play().catch((err) => {
+        audioRef.current.play().then(() => {
+          isTransitioningRef.current = false;
+        }).catch((err) => {
+          isTransitioningRef.current = false;
           console.error("Playback failed, skipping to next track:", err);
         });
       } else if (!absoluteUrl) {
@@ -127,9 +132,15 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
       setCurrentTrack(q[0]);
       const absoluteUrl = getAbsoluteUrl(q[0].previewUrl);
       if (audioRef.current && absoluteUrl) {
+        isTransitioningRef.current = true;
         audioRef.current.src = absoluteUrl;
         audioRef.current.load();
-        audioRef.current.play().catch(console.error);
+        audioRef.current.play().then(() => {
+          isTransitioningRef.current = false;
+        }).catch((err) => {
+          isTransitioningRef.current = false;
+          console.error(err);
+        });
       } else if (!absoluteUrl) {
         console.warn("Track lacks preview URL, skipping:", q[0]);
         setTimeout(() => next(), 500);
@@ -156,9 +167,15 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
       setCurrentTrack(prevTrack);
       const absoluteUrl = getAbsoluteUrl(prevTrack.previewUrl);
       if (audioRef.current && absoluteUrl) {
+        isTransitioningRef.current = true;
         audioRef.current.src = absoluteUrl;
         audioRef.current.load();
-        audioRef.current.play().catch(console.error);
+        audioRef.current.play().then(() => {
+          isTransitioningRef.current = false;
+        }).catch((err) => {
+          isTransitioningRef.current = false;
+          console.error(err);
+        });
       }
     }
   }, [setCurrentIndex, setCurrentTrack]);
@@ -180,8 +197,17 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         next();
       }
     };
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
+    const handlePlay = () => {
+      isTransitioningRef.current = false;
+      setIsPlaying(true);
+    };
+    const handlePause = () => {
+      if (isTransitioningRef.current) {
+        console.log("Ignored intermediate pause event during track transition");
+        return;
+      }
+      setIsPlaying(false);
+    };
     const handleError = (e: ErrorEvent | Event) => {
       console.error("Audio player error event fired:", e);
       // Auto-advance to the next track on playback/load failure
@@ -224,9 +250,15 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     setCurrentTrack(track);
     const absoluteUrl = getAbsoluteUrl(track.previewUrl);
     if (audioRef.current && absoluteUrl) {
+      isTransitioningRef.current = true;
       audioRef.current.src = absoluteUrl;
       audioRef.current.load();
-      audioRef.current.play().catch(console.error);
+      audioRef.current.play().then(() => {
+        isTransitioningRef.current = false;
+      }).catch((err) => {
+        isTransitioningRef.current = false;
+        console.error(err);
+      });
     }
   }, [setQueue, setOriginalQueue, setCurrentIndex, setCurrentTrack]);
 
