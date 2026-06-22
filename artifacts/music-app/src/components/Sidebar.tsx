@@ -22,7 +22,7 @@ export function Sidebar() {
   };
 
   return (
-    <div className="w-64 bg-black flex flex-col h-full shrink-0 border-r border-border">
+    <div className="hidden md:flex w-64 bg-black flex-col h-full shrink-0 border-r border-border">
       <div className="p-6">
         <h1 className="text-2xl font-bold text-primary mb-8 tracking-tighter">Melodify</h1>
         

@@ -101,7 +101,7 @@ export default function LikedSongs() {
 
       {/* Tracklist */}
       <div className="mt-8">
-        <div className="grid grid-cols-[16px_1fr_minmax(120px,200px)_minmax(120px,200px)_40px_40px] gap-4 px-4 py-2 border-b border-white/10 text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">
+        <div className="grid grid-cols-[16px_1fr_40px_40px] md:grid-cols-[16px_1fr_minmax(120px,200px)_40px_40px] lg:grid-cols-[16px_1fr_minmax(120px,200px)_minmax(120px,200px)_40px_40px] gap-4 px-4 py-2 border-b border-white/10 text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">
           <div className="text-right">#</div>
           <div>Title</div>
           <div className="hidden md:block">Album</div>
@@ -118,7 +118,7 @@ export default function LikedSongs() {
         ) : (
           <div className="space-y-1">
             {favorites.map((track, i) => (
-              <div key={track.id} className="grid grid-cols-[16px_1fr_minmax(120px,200px)_minmax(120px,200px)_40px_40px] gap-4 px-4 py-2 hover:bg-white/5 rounded-md group items-center transition-colors">
+              <div key={track.id} className="grid grid-cols-[16px_1fr_40px_40px] md:grid-cols-[16px_1fr_minmax(120px,200px)_40px_40px] lg:grid-cols-[16px_1fr_minmax(120px,200px)_minmax(120px,200px)_40px_40px] gap-4 px-4 py-2 hover:bg-white/5 rounded-md group items-center transition-colors">
                 <div className="text-right text-muted-foreground text-sm group-hover:hidden">{i + 1}</div>
                 <button
                   onClick={() => play(track, favorites)}

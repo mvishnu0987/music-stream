@@ -82,22 +82,40 @@ export function PlayerBar() {
   };
 
   return (
-    <div className="h-24 bg-card border-t border-border flex items-center justify-between px-4 w-full shrink-0 z-50">
-      <div className="flex items-center w-[25%] min-w-[180px]">
-        <img src={currentTrack.artworkUrl} alt={currentTrack.title} className="w-14 h-14 rounded shadow-md object-cover mr-4" />
-        <div className="flex flex-col overflow-hidden mr-4">
+    <div className="h-20 md:h-24 bg-card border-t border-border flex items-center justify-between px-4 w-full shrink-0 z-50 relative">
+      {/* Mobile Progress Bar (active tracking) */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 md:hidden overflow-hidden">
+        <div 
+          className="h-full bg-primary transition-all duration-300"
+          style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+        />
+      </div>
+
+      <div className="flex items-center w-full md:w-[25%] min-w-0 md:min-w-[180px]">
+        <img src={currentTrack.artworkUrl} alt={currentTrack.title} className="w-12 h-12 md:w-14 md:h-14 rounded shadow-md object-cover mr-3 md:mr-4 shrink-0" />
+        <div className="flex flex-col overflow-hidden mr-3 min-w-0 flex-1">
           <span className="text-sm text-white font-medium truncate">{currentTrack.title}</span>
           <span className="text-xs text-muted-foreground truncate">{currentTrack.artist}</span>
         </div>
         <button 
           onClick={handleFavoriteClick}
-          className={`transition-colors ${isFav ? 'text-primary fill-current' : 'text-muted-foreground hover:text-white'}`}
+          className={`transition-colors shrink-0 mr-3 md:mr-0 ${isFav ? 'text-primary fill-current' : 'text-muted-foreground hover:text-white'}`}
         >
           <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
         </button>
+
+        {/* Mobile Play/Pause and Next controls */}
+        <div className="flex md:hidden items-center gap-3 shrink-0 ml-auto">
+          <button onClick={isPlaying ? pause : resume} className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center transition-transform hover:scale-105 active:scale-95">
+            {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
+          </button>
+          <button onClick={next} className="text-muted-foreground hover:text-white transition-colors p-1">
+            <SkipForward className="w-5 h-5 fill-current" />
+          </button>
+        </div>
       </div>
 
-      <div className="flex flex-col items-center max-w-[40%] w-full">
+      <div className="hidden md:flex flex-col items-center max-w-[40%] w-full">
         <div className="flex items-center gap-6 mb-2">
           <button onClick={toggleShuffle} className={`transition-colors ${isShuffled ? 'text-primary' : 'text-muted-foreground hover:text-white'}`}>
             <Shuffle className="w-4 h-4" />
@@ -129,9 +147,9 @@ export function PlayerBar() {
         </div>
       </div>
 
-      <div className="flex items-center w-[40%] justify-end gap-4 min-w-[220px]">
+      <div className="hidden md:flex items-center w-[40%] justify-end gap-4 min-w-[220px]">
         {/* Toggle Real-time Widgets */}
-        <div className="flex items-center gap-1 border-r border-white/10 pr-3 hidden md:flex">
+        <div className="flex items-center gap-1 border-r border-white/10 pr-3">
           <button 
             onClick={() => {
               if (isWidgetOpen && activeWidgetTab === "visualizer") {
@@ -161,8 +179,6 @@ export function PlayerBar() {
           >
             <FileText className="w-4 h-4" />
           </button>
-
-
         </div>
 
         {currentTrack.previewUrl && (

@@ -202,6 +202,53 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     setVolumeState(newVolume);
   }, []);
 
+  // Media Session API Integration for Mobile Background Playback and Controls
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator) || typeof MediaMetadata === "undefined" || !currentTrack) return;
+
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentTrack.title,
+        artist: currentTrack.artist,
+        album: currentTrack.album || "Melodify",
+        artwork: currentTrack.artworkUrl ? [
+          { src: currentTrack.artworkUrl, sizes: "500x500", type: "image/jpeg" }
+        ] : []
+      });
+    } catch (e) {
+      console.error("Failed to set media session metadata", e);
+    }
+  }, [currentTrack]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+
+    try {
+      navigator.mediaSession.setActionHandler("play", resume);
+      navigator.mediaSession.setActionHandler("pause", pause);
+      navigator.mediaSession.setActionHandler("previoustrack", prev);
+      navigator.mediaSession.setActionHandler("nexttrack", next);
+    } catch (e) {
+      console.error("Failed to set media session action handlers", e);
+    }
+
+    return () => {
+      try {
+        navigator.mediaSession.setActionHandler("play", null);
+        navigator.mediaSession.setActionHandler("pause", null);
+        navigator.mediaSession.setActionHandler("previoustrack", null);
+        navigator.mediaSession.setActionHandler("nexttrack", null);
+      } catch (e) {
+        // ignore
+      }
+    };
+  }, [resume, pause, prev, next]);
+
   return (
     <MusicPlayerContext.Provider
       value={{

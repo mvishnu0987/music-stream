@@ -170,9 +170,8 @@ export default function RealtimeWidgets({ activeTab }: RealtimeWidgetsProps) {
       for (let w = 0; w < 3; w++) {
         ctx.beginPath();
         const offset = w * Math.PI / 3;
-        const speed = 0.05 + (w * 0.02);
 
-        for (let x = 0; x < width; x++) {
+        for (let x = 0; x < width; x += 4) {
           const y = height / 2 + 
             Math.sin(x * 0.01 + phase + offset) * waveAmplitude * Math.cos(x * 0.003) * pulse;
           
@@ -182,11 +181,20 @@ export default function RealtimeWidgets({ activeTab }: RealtimeWidgetsProps) {
             ctx.lineTo(x, y);
           }
         }
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = "rgba(139, 92, 246, 0.4)";
-        ctx.strokeStyle = `rgba(139, 92, 246, ${0.8 - w * 0.2})`;
+        
+        // Ensure line finishes at the right boundary
+        if (width % 4 !== 0) {
+          const y = height / 2 + 
+            Math.sin(width * 0.01 + phase + offset) * waveAmplitude * Math.cos(width * 0.003) * pulse;
+          ctx.lineTo(width, y);
+        }
+
+        // Apply style with dynamic opacity
+        ctx.strokeStyle = gradient;
+        ctx.globalAlpha = 0.9 - w * 0.25;
         ctx.stroke();
       }
+      ctx.globalAlpha = 1.0; // Reset alpha
 
       phase += isPlaying ? 0.04 : 0.005;
       animId = requestAnimationFrame(draw);

@@ -144,6 +144,9 @@ const LANGUAGE_PLAYLISTS: Record<string, string> = {
 
 // GET /api/music/proxy — streams audio through server (helps bypass CORS and mixed-content restrictions)
 router.get("/music/proxy", (req, res): void => {
+  req.socket.setTimeout(0);
+  res.setTimeout(0);
+
   const rawUrl = req.query.url as string;
   if (!rawUrl) { res.status(400).end(); return; }
 
@@ -157,6 +160,13 @@ router.get("/music/proxy", (req, res): void => {
   } catch {
     res.status(400).end(); return;
   }
+
+  let activeProxyReq: any = null;
+  req.on("close", () => {
+    if (activeProxyReq) {
+      activeProxyReq.destroy();
+    }
+  });
 
   const doRequest = (urlStr: string, redirectCount = 0): void => {
     if (redirectCount > 5) {
@@ -215,6 +225,8 @@ router.get("/music/proxy", (req, res): void => {
         proxyRes.pipe(res);
       }
     );
+
+    activeProxyReq = proxyReq;
 
     proxyReq.on("error", (err) => {
       req.log.error({ err }, "Audio proxy error");
@@ -317,7 +329,7 @@ router.get("/music/top", async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 50, 100);
   const offset = Math.max(0, Number(req.query.offset) || 0);
 
-  const hasGenre = genre && genre !== "All";
+  const hasGenre = !!(genre && genre !== "All");
   const cacheKey = `top:${language || "all"}:${genre || "all"}`;
   const cached = getCached(cacheKey);
   if (cached) {
