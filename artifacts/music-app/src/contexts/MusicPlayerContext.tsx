@@ -87,6 +87,19 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     audioRef.current?.pause();
   }, []);
 
+  const getAbsoluteUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    if (typeof window !== "undefined") {
+      try {
+        return new URL(url, window.location.origin).href;
+      } catch {
+        return url;
+      }
+    }
+    return url;
+  };
+
   const next = useCallback(() => {
     const q = queueRef.current;
     const idx = currentIndexRef.current;
@@ -98,16 +111,28 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
       const nextTrack = q[idx + 1];
       setCurrentIndex(idx + 1);
       setCurrentTrack(nextTrack);
-      if (audioRef.current && nextTrack.previewUrl) {
-        audioRef.current.src = nextTrack.previewUrl;
-        audioRef.current.play().catch(console.error);
+      const absoluteUrl = getAbsoluteUrl(nextTrack.previewUrl);
+      if (audioRef.current && absoluteUrl) {
+        audioRef.current.src = absoluteUrl;
+        audioRef.current.load();
+        audioRef.current.play().catch((err) => {
+          console.error("Playback failed, skipping to next track:", err);
+        });
+      } else if (!absoluteUrl) {
+        console.warn("Track lacks preview URL, skipping:", nextTrack);
+        setTimeout(() => next(), 500);
       }
     } else if (rep === "all") {
       setCurrentIndex(0);
       setCurrentTrack(q[0]);
-      if (audioRef.current && q[0].previewUrl) {
-        audioRef.current.src = q[0].previewUrl;
+      const absoluteUrl = getAbsoluteUrl(q[0].previewUrl);
+      if (audioRef.current && absoluteUrl) {
+        audioRef.current.src = absoluteUrl;
+        audioRef.current.load();
         audioRef.current.play().catch(console.error);
+      } else if (!absoluteUrl) {
+        console.warn("Track lacks preview URL, skipping:", q[0]);
+        setTimeout(() => next(), 500);
       }
     } else {
       pause();
@@ -129,8 +154,10 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
       const prevTrack = q[idx - 1];
       setCurrentIndex(idx - 1);
       setCurrentTrack(prevTrack);
-      if (audioRef.current && prevTrack.previewUrl) {
-        audioRef.current.src = prevTrack.previewUrl;
+      const absoluteUrl = getAbsoluteUrl(prevTrack.previewUrl);
+      if (audioRef.current && absoluteUrl) {
+        audioRef.current.src = absoluteUrl;
+        audioRef.current.load();
         audioRef.current.play().catch(console.error);
       }
     }
@@ -155,17 +182,24 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     };
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
+    const handleError = (e: ErrorEvent | Event) => {
+      console.error("Audio player error event fired:", e);
+      // Auto-advance to the next track on playback/load failure
+      next();
+    };
 
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("play", handlePlay);
     audio.addEventListener("pause", handlePause);
+    audio.addEventListener("error", handleError);
 
     return () => {
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("play", handlePlay);
       audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("error", handleError);
     };
   }, [next]);
 
@@ -188,8 +222,10 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     }
     
     setCurrentTrack(track);
-    if (audioRef.current && track.previewUrl) {
-      audioRef.current.src = track.previewUrl;
+    const absoluteUrl = getAbsoluteUrl(track.previewUrl);
+    if (audioRef.current && absoluteUrl) {
+      audioRef.current.src = absoluteUrl;
+      audioRef.current.load();
       audioRef.current.play().catch(console.error);
     }
   }, [setQueue, setOriginalQueue, setCurrentIndex, setCurrentTrack]);
