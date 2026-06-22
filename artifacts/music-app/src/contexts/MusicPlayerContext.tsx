@@ -282,7 +282,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     setVolumeState(newVolume);
   }, []);
 
-  // Preload the next track in the queue to enable seamless background transitions on mobile browsers
+  // Preload the next track in the queue using fetch to cache it without stealing audio focus
   useEffect(() => {
     if (typeof window === "undefined" || queue.length === 0 || currentIndex < 0) return;
 
@@ -298,14 +298,25 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     const absoluteUrl = getAbsoluteUrl(nextTrack.previewUrl);
     if (!absoluteUrl) return;
 
-    const preloadAudio = new Audio();
-    preloadAudio.src = absoluteUrl;
-    preloadAudio.preload = "auto";
-    preloadAudio.load();
+    const abortController = new AbortController();
+
+    // Fetch the track data in the background to warm up browser cache.
+    // We use fetch instead of new Audio() to prevent stealing audio focus on mobile devices.
+    fetch(absoluteUrl, { signal: abortController.signal })
+      .then(res => {
+        if (!res.ok) return;
+        // Consume the body as a blob to force the browser to download and cache the entire file.
+        return res.blob();
+      })
+      .catch(err => {
+        if (err.name !== "AbortError") {
+          console.error("Failed to preload next track:", err);
+        }
+      });
 
     return () => {
-      preloadAudio.src = "";
-      preloadAudio.load();
+      // Abort the fetch if the track changes or component unmounts
+      abortController.abort();
     };
   }, [currentIndex, queue, repeatMode]);
 
