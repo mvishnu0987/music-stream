@@ -282,6 +282,33 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     setVolumeState(newVolume);
   }, []);
 
+  // Preload the next track in the queue to enable seamless background transitions on mobile browsers
+  useEffect(() => {
+    if (typeof window === "undefined" || queue.length === 0 || currentIndex < 0) return;
+
+    let nextTrack: Track | null = null;
+    if (currentIndex < queue.length - 1) {
+      nextTrack = queue[currentIndex + 1];
+    } else if (repeatMode === "all") {
+      nextTrack = queue[0];
+    }
+
+    if (!nextTrack || !nextTrack.previewUrl) return;
+
+    const absoluteUrl = getAbsoluteUrl(nextTrack.previewUrl);
+    if (!absoluteUrl) return;
+
+    const preloadAudio = new Audio();
+    preloadAudio.src = absoluteUrl;
+    preloadAudio.preload = "auto";
+    preloadAudio.load();
+
+    return () => {
+      preloadAudio.src = "";
+      preloadAudio.load();
+    };
+  }, [currentIndex, queue, repeatMode]);
+
   // Media Session API Integration for Mobile Background Playback and Controls
   useEffect(() => {
     if (typeof window === "undefined" || !("mediaSession" in navigator) || typeof MediaMetadata === "undefined" || !currentTrack) return;
