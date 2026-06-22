@@ -104,13 +104,22 @@ export function PlayerBar() {
           <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
         </button>
 
-        {/* Mobile Play/Pause and Next controls */}
-        <div className="flex md:hidden items-center gap-3 shrink-0 ml-auto">
-          <button onClick={isPlaying ? pause : resume} className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center transition-transform hover:scale-105 active:scale-95">
+        {/* Mobile Playback Controls */}
+        <div className="flex md:hidden items-center gap-2 px-1 shrink-0 ml-auto">
+          <button onClick={toggleShuffle} className={`p-1 transition-colors ${isShuffled ? 'text-primary' : 'text-muted-foreground'}`}>
+            <Shuffle className="w-4 h-4" />
+          </button>
+          <button onClick={prev} className="text-muted-foreground transition-colors p-1">
+            <SkipBack className="w-4 h-4 fill-current" />
+          </button>
+          <button onClick={isPlaying ? pause : resume} className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0 mx-0.5">
             {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
           </button>
-          <button onClick={next} className="text-muted-foreground hover:text-white transition-colors p-1">
-            <SkipForward className="w-5 h-5 fill-current" />
+          <button onClick={next} className="text-muted-foreground transition-colors p-1">
+            <SkipForward className="w-4 h-4 fill-current" />
+          </button>
+          <button onClick={toggleRepeat} className={`p-1 transition-colors ${repeatMode !== 'none' ? 'text-primary' : 'text-muted-foreground'}`}>
+            {repeatMode === 'one' ? <Repeat1 className="w-4 h-4" /> : <Repeat className="w-4 h-4" />}
           </button>
         </div>
       </div>
