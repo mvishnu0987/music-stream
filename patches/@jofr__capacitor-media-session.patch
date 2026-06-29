@@ -1,0 +1,150 @@
+diff --git a/android/src/main/java/io/github/jofr/capacitor/mediasessionplugin/MediaSessionPlugin.java b/android/src/main/java/io/github/jofr/capacitor/mediasessionplugin/MediaSessionPlugin.java
+index 6f54b7fc73db7a5a1171fcacf6d3f589edf1e9bd..41262e6aafc9cfa99240acff02904ac29c439b00 100644
+--- a/android/src/main/java/io/github/jofr/capacitor/mediasessionplugin/MediaSessionPlugin.java
++++ b/android/src/main/java/io/github/jofr/capacitor/mediasessionplugin/MediaSessionPlugin.java
+@@ -122,22 +122,52 @@ public class MediaSessionPlugin extends Plugin {
+     }
+ 
+     @PluginMethod
+-    public void setMetadata(PluginCall call) throws JSONException, IOException {
++    public void setMetadata(final PluginCall call) {
+         title = call.getString("title", title);
+         artist = call.getString("artist", artist);
+         album = call.getString("album", album);
+ 
+         final JSArray artworkArray = call.getArray("artwork");
+-        final List<JSONObject> artworkList = artworkArray.toList();
+-        for (JSONObject artwork : artworkList) {
+-            String src = artwork.getString("src");
+-            if (src != null) {
+-                this.artwork = urlToBitmap(src);
+-            }
+-        }
+ 
+-        if (service != null) { updateServiceMetadata(); };
+-        call.resolve();
++        new Thread(new Runnable() {
++            @Override
++            public void run() {
++                Bitmap downloadedArtwork = null;
++                if (artworkArray != null) {
++                    try {
++                        List<JSONObject> artworkList = artworkArray.toList();
++                        for (JSONObject artworkObj : artworkList) {
++                            String src = artworkObj.getString("src");
++                            if (src != null) {
++                                try {
++                                    downloadedArtwork = urlToBitmap(src);
++                                    if (downloadedArtwork != null) {
++                                        break;
++                                    }
++                                } catch (Exception e) {
++                                    Log.e(TAG, "Failed to download artwork from " + src, e);
++                                }
++                            }
++                        }
++                    } catch (Exception e) {
++                        Log.e(TAG, "Error parsing artwork list", e);
++                    }
++                }
++
++                final Bitmap finalArtwork = downloadedArtwork;
++
++                getActivity().runOnUiThread(new Runnable() {
++                    @Override
++                    public void run() {
++                        artwork = finalArtwork;
++                        if (service != null) {
++                            updateServiceMetadata();
++                        }
++                        call.resolve();
++                    }
++                });
++            }
++        }).start();
+     }
+ 
+     private void updateServicePlaybackState() {
+diff --git a/android/src/main/java/io/github/jofr/capacitor/mediasessionplugin/MediaSessionService.java b/android/src/main/java/io/github/jofr/capacitor/mediasessionplugin/MediaSessionService.java
+index cb0417ff923d0cbf2dc6019a52a5d527a456a495..0562eabfd30059cf136b27d589c6dd80dc24218e 100644
+--- a/android/src/main/java/io/github/jofr/capacitor/mediasessionplugin/MediaSessionService.java
++++ b/android/src/main/java/io/github/jofr/capacitor/mediasessionplugin/MediaSessionService.java
+@@ -6,6 +6,7 @@ import android.app.NotificationManager;
+ import android.app.PendingIntent;
+ import android.app.Service;
+ import android.content.Intent;
++import android.content.Context;
+ import android.content.pm.ServiceInfo;
+ import android.graphics.Bitmap;
+ import android.os.Build;
+@@ -59,6 +60,9 @@ public class MediaSessionService extends Service {
+     private MediaSessionPlugin plugin;
+     private MediaSessionCallback callback;
+ 
++    private android.os.PowerManager.WakeLock wakeLock;
++    private android.net.wifi.WifiManager.WifiLock wifiLock;
++
+     private final IBinder binder = new LocalBinder();
+ 
+     public final class LocalBinder extends Binder {
+@@ -82,6 +86,20 @@ public class MediaSessionService extends Service {
+     public void connectAndInitialize(MediaSessionPlugin plugin, Intent intent) {
+         this.plugin = plugin;
+ 
++        android.os.PowerManager powerManager = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
++        if (powerManager != null) {
++            wakeLock = powerManager.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "MusicStream::PlaybackWakeLock");
++        }
++
++        android.net.wifi.WifiManager wifiManager = (android.net.wifi.WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
++        if (wifiManager != null) {
++            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
++                wifiLock = wifiManager.createWifiLock(android.net.wifi.WifiManager.WIFI_MODE_FULL_HIGH_PERF, "MusicStream::WifiLock");
++            } else {
++                wifiLock = wifiManager.createWifiLock(android.net.wifi.WifiManager.WIFI_MODE_FULL, "MusicStream::WifiLock");
++            }
++        }
++
+         mediaSession = new MediaSessionCompat(this, "WebViewMediaSession");
+         mediaSession.setCallback(new MediaSessionCallback(plugin));
+         mediaSession.setActive(true);
+@@ -147,6 +165,12 @@ public class MediaSessionService extends Service {
+     }
+ 
+     public void destroy() {
++        if (wakeLock != null && wakeLock.isHeld()) {
++            wakeLock.release();
++        }
++        if (wifiLock != null && wifiLock.isHeld()) {
++            wifiLock.release();
++        }
+         stopForeground(true);
+         stopSelf();
+     }
+@@ -273,6 +297,26 @@ public class MediaSessionService extends Service {
+             playbackStateBuilder.setState(this.playbackState, this.position, this.playbackSpeed);
+             mediaSession.setPlaybackState(playbackStateBuilder.build());
+             playbackStateUpdate = false;
++
++            if (this.playbackState == PlaybackStateCompat.STATE_PLAYING) {
++                if (wakeLock != null && !wakeLock.isHeld()) {
++                    wakeLock.acquire();
++                    Log.d(TAG, "WakeLock acquired");
++                }
++                if (wifiLock != null && !wifiLock.isHeld()) {
++                    wifiLock.acquire();
++                    Log.d(TAG, "WifiLock acquired");
++                }
++            } else {
++                if (wakeLock != null && wakeLock.isHeld()) {
++                    wakeLock.release();
++                    Log.d(TAG, "WakeLock released");
++                }
++                if (wifiLock != null && wifiLock.isHeld()) {
++                    wifiLock.release();
++                    Log.d(TAG, "WifiLock released");
++                }
++            }
+         }
+ 
+         if (mediaMetadataUpdate && mediaMetadataBuilder != null) {

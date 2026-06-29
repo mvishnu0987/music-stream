@@ -93,7 +93,10 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
     if (typeof window !== "undefined") {
       try {
-        return new URL(url, window.location.origin).href;
+        const base = import.meta.env.PROD 
+          ? "https://music-stream-uxlq.onrender.com" 
+          : window.location.origin;
+        return new URL(url, base).href;
       } catch {
         return url;
       }
@@ -362,7 +365,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         artist: currentTrack.artist,
         album: currentTrack.album || "Melodify",
         artwork: currentTrack.artworkUrl ? [
-          { src: currentTrack.artworkUrl, sizes: "500x500", type: "image/jpeg" }
+          { src: getAbsoluteUrl(currentTrack.artworkUrl) || currentTrack.artworkUrl, sizes: "500x500", type: "image/jpeg" }
         ] : []
       });
     } catch (e) {
