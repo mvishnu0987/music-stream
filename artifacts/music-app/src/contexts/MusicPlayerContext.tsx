@@ -122,6 +122,9 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         audioRef.current.load();
         audioRef.current.play().then(() => {
           isTransitioningRef.current = false;
+          if (typeof window !== "undefined" && "mediaSession" in navigator) {
+            navigator.mediaSession.playbackState = "playing";
+          }
         }).catch((err) => {
           isTransitioningRef.current = false;
           console.error("Playback failed, skipping to next track:", err);
@@ -140,6 +143,9 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         audioRef.current.load();
         audioRef.current.play().then(() => {
           isTransitioningRef.current = false;
+          if (typeof window !== "undefined" && "mediaSession" in navigator) {
+            navigator.mediaSession.playbackState = "playing";
+          }
         }).catch((err) => {
           isTransitioningRef.current = false;
           console.error(err);
@@ -175,6 +181,9 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         audioRef.current.load();
         audioRef.current.play().then(() => {
           isTransitioningRef.current = false;
+          if (typeof window !== "undefined" && "mediaSession" in navigator) {
+            navigator.mediaSession.playbackState = "playing";
+          }
         }).catch((err) => {
           isTransitioningRef.current = false;
           console.error(err);
@@ -258,6 +267,9 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
       audioRef.current.load();
       audioRef.current.play().then(() => {
         isTransitioningRef.current = false;
+        if (typeof window !== "undefined" && "mediaSession" in navigator) {
+          navigator.mediaSession.playbackState = "playing";
+        }
       }).catch((err) => {
         isTransitioningRef.current = false;
         console.error(err);
@@ -267,7 +279,11 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
 
   const resume = useCallback(() => {
     if (currentTrackRef.current?.previewUrl) {
-      audioRef.current?.play().catch(console.error);
+      audioRef.current?.play().then(() => {
+        if (typeof window !== "undefined" && "mediaSession" in navigator) {
+          navigator.mediaSession.playbackState = "playing";
+        }
+      }).catch(console.error);
     }
   }, []);
 
@@ -376,7 +392,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
     navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
-  }, [isPlaying]);
+  }, [isPlaying, currentTrack]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
