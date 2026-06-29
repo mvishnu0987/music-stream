@@ -12,5 +12,10 @@
   "devDependencies": {
     "prettier": "^3.8.3",
     "typescript": "~5.9.3"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@jofr/capacitor-media-session": "patches/@jofr__capacitor-media-session.patch"
+    }
   }
 }
